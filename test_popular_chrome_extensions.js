@@ -9,16 +9,8 @@ const { chrome } = require('node:process');
     const browser = await chromium.launch();
     const filepath_to_original_extensions = '/Users/sean/Downloads/Extensions:Research/cexts/unzips';
     const filepath_to_extension_copies = '/Users/sean/Downloads/Extensions:Research/Extension_copies';
-    const extension_ids = [
-        'bmnlcjabgnpnenekpadlanbbkooimhnj', 'kbfnbcaeplbcioakkpcpgfkobkghlhen',
-        'gbkeegbaiigmenfmjfclcdgdpimamgkj', 'laookkfknpbbblfpciffpaejjkokdgca',
-        'ghgabhipcejejjmhhchfonmamedcbeod', 'mmeijimgabbpbgpdklnllpncmdofkcpn',
-        'gohjpllcolmccldfdggmamodembldgpc', 'nenlahapcbofgnanklpelkaejcehkggg',
-        'iginnfkhmmfhlkagcmpgofnjhanpmklb', 'ogdlpmhglpejoiomcodnpjnfgcpmgale',
-        'inoeonmfapjbbkmdafoankkfajkcphgd', 'oocalimimngaihdkbihfgmpkcpnmlaoa',
-        'jghecgabfgfdldnmbfkhmffcabddioke', 'pioclpoplcdbaefihamjohnefbikjilc',
-        'jldhpllghnbhlbpcmnajkpdmadaolakh'
-    ];
+    const extension_ids = fs.readdirSync(filepath_to_original_extensions);
+
     /* 
     copies extensions into copy folder so edits are not persistent
     overwrites contents of file, so no need to delete files
@@ -50,19 +42,6 @@ const { chrome } = require('node:process');
             extracted_urls[url] = 1;
         }
     }
-
-    //DONE - go through content script array, add a new content script with proxy info that gets added per webpage
-    //DONE -  add content script info to content script array
-
-    
-    // figure out how to pause between navigation
-    // DONE - figure out how to get from webpage console to terminal console
-
-    //addeventlistener
-
-    // DONE - add hooks to background
-    // DONE - deal with V2 and V3 differences
-    // read background from playwright, 
 
     // broadcast channel
 
