@@ -7,8 +7,11 @@ const { chrome } = require('node:process');
 (async () => {
     // Setup
     const browser = await chromium.launch();
+    /* Edit the below filepaths */
     const filepath_to_original_extensions = '/Users/sean/Downloads/Extensions:Research/cexts/unzips';
     const filepath_to_extension_copies = '/Users/sean/Downloads/Extensions:Research/Extension_copies';
+    const filepath_to_proxy_content_script = '/Users/sean/Downloads/Extensions:Research/proxy_content_script.js';
+    const filepath_to_proxy_background = '/Users/sean/Downloads/Extensions:Research/proxy_background.js';
     const extension_ids = fs.readdirSync(filepath_to_original_extensions);
 
     /* 
@@ -52,7 +55,7 @@ const { chrome } = require('node:process');
     for (let x = 0; x < extension_ids.length; x++) {
         var manifest = JSON.parse(fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8"));
         // copies the proxy content script into each copy of the extensions       
-        fs.copyFileSync("/Users/sean/Downloads/Extensions:Research/proxy_content_script.js", filepath_to_extension_copies + '/' + extension_ids[x] + '/' + "proxy_content_script.js");
+        fs.copyFileSync(filepath_to_proxy_content_script, filepath_to_extension_copies + '/' + extension_ids[x] + '/' + "proxy_content_script.js");
         var data = fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8");
         var fd = fs.openSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', 'w+');
         
@@ -99,7 +102,7 @@ const { chrome } = require('node:process');
         if (manifest.hasOwnProperty("background")) {
             
             // The below code adds hooks to the background service workers
-            fs.copyFileSync("/Users/sean/Downloads/Extensions:Research/proxy_background.js", filepath_to_extension_copies + '/' + extension_ids[x] + '/' + "proxy_background.js");
+            fs.copyFileSync(filepath_to_proxy_background, filepath_to_extension_copies + '/' + extension_ids[x] + '/' + "proxy_background.js");
             if (manifest.manifest_version == 2) {
                 
                 // updates the manifest file to include new proxy code
@@ -271,8 +274,8 @@ const { chrome } = require('node:process');
     console.log("chrome.runtime.sendMessage",chromeruntimesendMessage) 
     console.log("chrome.runtime.onMessage.addListener",chromeruntimeonMessageaddListener)
     console.log("chrome.runtime.onConnect.addListener", chromeruntimeonConnectaddListener)
-    console.log("window.addEventListener",windowaddEventListener)
-    console.log("document.addEventListener",documentaddEventListener)
+    console.log("window.addEventListener", windowaddEventListener)
+    console.log("document.addEventListener", documentaddEventListener)
     
     await context.close();
 
