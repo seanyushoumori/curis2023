@@ -203,10 +203,11 @@ const { execSync } = require('node:child_process');
                 //console.log(msg.text());
                 let temp = msg.text().split(" ");
                 let api = temp[0];
-                let id = temp[temp.length - 2];
-                let time = temp[temp.length - 1]
-                let args = temp.slice(5, temp.length - 2);
-                content_script_args.push([api, id, time, args]);
+                let id = temp[5];
+                let time = temp[6];
+                let pc = temp[7]
+                let args = temp.slice(8, temp.length);
+                content_script_args.push([api, id, time, pc, args]);
                 // if (msg.text().includes("chrome.webRequest.onHeadersReceived.addListener")){
                 //     chromewebRequestonHeadersReceivedaddListener[id] += 1;
                 //     content_script_args.push(["chrome.webRequest.onHeadersReceived.addListener", id, args]);
@@ -290,7 +291,7 @@ const { execSync } = require('node:child_process');
     //fs.writeFileSync("content_script_args", JSON.stringify(content_script_args));
     fs.writeFileSync("background_args", JSON.stringify(background_args));
     console.log(content_script_args);
-    //console.log(background_args);
+    console.log(background_args);
     await context.close();
 
 
