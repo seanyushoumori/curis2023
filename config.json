@@ -1,0 +1,32 @@
+{
+    "certificate": "ZWNCSHpvR3JmOVV6UjQ4NlYwcFA2RHNyVHZLOVc3NGtjdTZ5VDFUZzAybz0K",
+    "proxy_server": "127.0.0.1:8080",
+    "website_count": 10,
+    "service_workers_to_proxy": [
+        "chrome.webRequest.onHeadersReceived.addListener",
+        "chrome.webRequest.onBeforeRequest.addListener",
+        "chrome.webRequest.onBeforeSendHeaders.addListener",
+        "chrome.webRequest.onSendHeaders.addListener",
+        "chrome.webRequest.onBeforeRedirect.addListener",
+        "chrome.webRequest.onResponseStarted.addListener",
+        "chrome.webRequest.onCompleted.addListener",
+        "chrome.tabs.create",
+        "chrome.tabs.executeScript",
+        "chrome.tabs.sendMessage",
+        "chrome.tabs.reload",
+        "chrome.tabs.onUpdated.addListener",
+        "chrome.tabs.onCreated.addListener",
+        "chrome.tabs.onActivated.addListener",
+        "chrome.runtime.onMessage.addListener",
+        "chrome.runtime.onConnect.addListener"
+    ],
+    "content_scripts_to_proxy": [
+        "fetch",
+        "chrome.webRequest.onHeadersReceived.addListener",
+        "chrome.runtime.sendMessage",
+        "chrome.runtime.onMessage.addListener",
+        "chrome.runtime.onConnect.addListener",
+        "window.addEventListener",
+        "document.addEventListener"
+    ]
+}

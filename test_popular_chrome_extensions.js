@@ -1,26 +1,29 @@
 const assert = require('node:assert');
+const process = require('process');
 const { chromium, devices } = require('playwright');
 const fs = require("fs");
 const { chrome } = require('node:process');
-
+const { execSync } = require('node:child_process');
 
 (async () => {
-    // Setup
-    const browser = await chromium.launch();
-    /* Edit the below filepaths */
-    const filepath_to_original_extensions = '/Users/sean/Downloads/Extensions:Research/cexts/unzips';
-    const filepath_to_extension_copies = '/Users/sean/Downloads/Extensions:Research/Extension_copies';
-    const filepath_to_proxy_content_script = '/Users/sean/Downloads/Extensions:Research/proxy_content_script.js';
-    const filepath_to_proxy_background = '/Users/sean/Downloads/Extensions:Research/proxy_background.js';
+    
+    //downloads the extension IDs that are called in the arguments list 
+    const args = process.argv;
+    for (let i = 2; i < args.length; i++){
+        await execSync(`node download_extension.js ${args[i]}`);
+    }
+    const config = JSON.parse(fs.readFileSync('config.json'));  
+    const filepath_to_original_extensions = 'cexts/unzips';
+    const filepath_to_extension_copies = 'Extension_copies';
+    const filepath_to_proxy_content_script = 'proxy_content_script.js';
+    const filepath_to_proxy_background = 'proxy_background.js';
     const extension_ids = fs.readdirSync(filepath_to_original_extensions);
-
-    /* 
-    copies extensions into copy folder so edits are not persistent
-    overwrites contents of file, so no need to delete files
-    */
+    console.log(extension_ids);
     fs.cpSync(filepath_to_original_extensions, filepath_to_extension_copies, { recursive: true, force: true });
 
-    //setTimeout(() => {console.log("sleeping!\n")}, 10000);
+    /*
+    A helper function that tracks how frequent URLs appear in manifest files
+    */
     var extracted_urls = {};
     function update_urls(extracted_urls, url) {
         if (url == 'http://*/*' || url == 'https://*/*' || url == '<all_urls>' || url == '*://*/*' || url.slice(0, 3) == 'ftp') {
@@ -46,7 +49,6 @@ const { chrome } = require('node:process');
         }
     }
 
-    // broadcast channel
 
     /*
     Goes through the files in the extensions folder, and parses each manifest file
@@ -162,79 +164,73 @@ const { chrome } = require('node:process');
     for (let i = 0; i < extension_ids.length; i++) {
         single_string_of_filepaths += filepath_to_extension_copies + '/' + extension_ids[i] + ',';
     }
-    //console.log(single_string_of_filepaths);
+    
+    const browser = await chromium.launch();
     const context = await chromium.launchPersistentContext('', {
         headless: false,
         args: [
             `--disable-extensions-except=${single_string_of_filepaths}`,
             `--load-extension=${single_string_of_filepaths}`,
-            `--proxy-server=127.0.0.1:8080`,
-            // change certificate if using different computer
-            `--ignore-certificate-errors-spki-list=ZWNCSHpvR3JmOVV6UjQ4NlYwcFA2RHNyVHZLOVc3NGtjdTZ5VDFUZzAybz0K`
+            `--proxy-server=${config.proxy_server}`,
+            `--ignore-certificate-errors-spki-list=${config.certificate}`
         ],
 
     });
     
-
-    
-    
-    
-    var chromewebRequestonHeadersReceivedaddListener = {}
-    var chromeruntimesendMessage = {}
-    var chromeruntimeonMessageaddListener = {}
-    var chromeruntimeonConnectaddListener = {}
-    var windowaddEventListener = {}
-    var documentaddEventListener = {}
-    for (let i = 0; i < extension_ids.length; i++){
-        chromewebRequestonHeadersReceivedaddListener[extension_ids[i]] = 0;
-        chromeruntimesendMessage[extension_ids[i]] = 0;
-        chromeruntimeonMessageaddListener[extension_ids[i]] = 0;
-        chromeruntimeonConnectaddListener[extension_ids[i]] = 0;
-        windowaddEventListener[extension_ids[i]] = 0;
-        documentaddEventListener[extension_ids[i]] = 0;
-    }
+    //all arguments and their callers are stored in these arrays
+    var content_script_args = [];
+    var background_args = [];
 
 
-  
 
-    var temp_count = 0;
+    var website_count = 0;
     for (let url in extracted_urls){
         // this is just to speed up the process, otherwise it visits way too many URLs
         if (extracted_urls[url] < 2){
             continue;
         }
-        if (temp_count > 20){
-            console.log("temp max page count reached")
+        if (website_count > config.website_count){
+            console.log("max page count reached")
             break;
         }
-        temp_count++;
+        website_count++;
 
         let page = await context.newPage();
+        // this tracks console logs from content scripts
         page.on('console', msg => {
             
             if (msg.text().includes("API invoked with args")){
                 //console.log(msg.text());
                 let temp = msg.text().split(" ");
-                let id = temp[temp.length - 1];
-                //console.log(id);
-                if (msg.text().includes("chrome.webRequest.onHeadersReceived.addListener")){
-                    chromewebRequestonHeadersReceivedaddListener[id] += 1;
-                }
-                else if (msg.text().includes("chrome.runtime.sendMessage")){
-                    chromeruntimesendMessage[id] += 1;
-                }
-                else if (msg.text().includes("chrome.runtime.onMessage.addListener")){
-                    chromeruntimeonMessageaddListener[id] += 1;
-                }
-                else if (msg.text().includes("chrome.runtime.onConnect.addListener")){
-                    chromeruntimeonConnectaddListener[id] += 1;
-                }
-                else if (msg.text().includes("window.addEventListener")){
-                    windowaddEventListener[id] += 1;
-                }
-                else if (msg.text().includes("document.addEventListener")){
-                    documentaddEventListener[id] += 1;
-                }
+                let api = temp[0];
+                let id = temp[temp.length - 2];
+                let time = temp[temp.length - 1]
+                let args = temp.slice(5, temp.length - 2);
+                content_script_args.push([api, id, time, args]);
+                // if (msg.text().includes("chrome.webRequest.onHeadersReceived.addListener")){
+                //     chromewebRequestonHeadersReceivedaddListener[id] += 1;
+                //     content_script_args.push(["chrome.webRequest.onHeadersReceived.addListener", id, args]);
+                // }
+                // else if (msg.text().includes("chrome.runtime.sendMessage")){
+                //     chromeruntimesendMessage[id] += 1;
+                //     content_script_args.push(["chrome.runtime.sendMessage", id, args]);
+                // }
+                // else if (msg.text().includes("chrome.runtime.onMessage.addListener")){
+                //     chromeruntimeonMessageaddListener[id] += 1;
+                //     content_script_args.push(["chrome.runtime.onMessage.addListener", id, args]);
+                // }
+                // else if (msg.text().includes("chrome.runtime.onConnect.addListener")){
+                //     chromeruntimeonConnectaddListener[id] += 1;
+                //     content_script_args.push(["chrome.runtime.onConnect.addListener", id, args]);
+                // }
+                // else if (msg.text().includes("window.addEventListener")){
+                //     windowaddEventListener[id] += 1;
+                //     content_script_args.push(["window.addEventListener", id, args]);
+                // }
+                // else if (msg.text().includes("document.addEventListener")){
+                //     documentaddEventListener[id] += 1;
+                //     content_script_args.push(["document.addEventListener", id, args]);
+                // }
             }
         });
         try{
@@ -246,37 +242,55 @@ const { chrome } = require('node:process');
     }
     //manifest V2
     let service_workers = [];
-    if (context.backgroundPages().length){
-        //console.log(context.backgroundPages().length)
+    if (context.backgroundPages().length){       
         for (let i = 0; i < context.backgroundPages().length; i++){
             service_workers.push(context.backgroundPages()[i]);
         }
     }
     //manifest V3
     if (context.serviceWorkers().length){
-        //console.log(context.serviceWorkers().length)
         for (let i = 0; i < context.serviceWorkers().length; i++){
             service_workers.push(context.serviceWorkers()[i]);
         }
     }
-    //console.log(service_workers.length);
+    
     for (let i = 0; i < service_workers.length; i++){
         try {
             let temp = await service_workers[i].evaluate(() => {
-                return [chrome.runtime.id, proxied_data, api_call_count];
+                //return proxied_data;
+                return proxied_data;
+                
             });
-            console.log(temp[2]);
+            for (let j = 0; j < temp.length; j++){
+                background_args.push(temp[j].slice());
+            }
         } catch (e) {
             console.log(e);
         }
     } 
-    console.log("chrome.webRequest.onHeadersReceived.addListener:",chromewebRequestonHeadersReceivedaddListener) 
-    console.log("chrome.runtime.sendMessage",chromeruntimesendMessage) 
-    console.log("chrome.runtime.onMessage.addListener",chromeruntimeonMessageaddListener)
-    console.log("chrome.runtime.onConnect.addListener", chromeruntimeonConnectaddListener)
-    console.log("window.addEventListener", windowaddEventListener)
-    console.log("document.addEventListener", documentaddEventListener)
+
+
+    //timestamp when things are logged
+    //add a pc to each array element
+    //JSON.stringify the objects
+
+
+
+
+    /*
+    Prints how often APIs are called by content scripts and which extensions are calling them
+    */
+    // console.log("chrome.webRequest.onHeadersReceived.addListener:", chromewebRequestonHeadersReceivedaddListener) 
+    // console.log("chrome.runtime.sendMessage",chromeruntimesendMessage) 
+    // console.log("chrome.runtime.onMessage.addListener",chromeruntimeonMessageaddListener)
+    // console.log("chrome.runtime.onConnect.addListener", chromeruntimeonConnectaddListener)
+    // console.log("window.addEventListener", windowaddEventListener)
+    // console.log("document.addEventListener", documentaddEventListener)
     
+    //fs.writeFileSync("content_script_args", JSON.stringify(content_script_args));
+    fs.writeFileSync("background_args", JSON.stringify(background_args));
+    console.log(content_script_args);
+    //console.log(background_args);
     await context.close();
 
 
