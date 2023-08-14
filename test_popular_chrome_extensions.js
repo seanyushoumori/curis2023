@@ -288,11 +288,11 @@ const { execSync } = require('node:child_process');
     // console.log("window.addEventListener", windowaddEventListener)
     // console.log("document.addEventListener", documentaddEventListener)
     
-    //fs.writeFileSync("content_script_args", JSON.stringify(content_script_args));
-    fs.writeFileSync("background_args", JSON.stringify(background_args));
+    fs.writeFileSync(`content_script_args`, JSON.stringify(content_script_args));
+    fs.writeFileSync(`background_args`, JSON.stringify(background_args));
     console.log(content_script_args);
     console.log(background_args);
     await context.close();
-
+    await browser.close();
 
 })();
