@@ -18,7 +18,7 @@ const { execSync } = require('node:child_process');
     const filepath_to_proxy_content_script = 'proxy_content_script.js';
     const filepath_to_proxy_background = 'proxy_background.js';
     const extension_ids = fs.readdirSync(filepath_to_original_extensions);
-    console.log(extension_ids);
+    //console.log(extension_ids);
     fs.cpSync(filepath_to_original_extensions, filepath_to_extension_copies, { recursive: true, force: true });
 
     /*
@@ -288,8 +288,9 @@ const { execSync } = require('node:child_process');
     // console.log("window.addEventListener", windowaddEventListener)
     // console.log("document.addEventListener", documentaddEventListener)
     
-    fs.writeFileSync(`content_script_args`, JSON.stringify(content_script_args));
-    fs.writeFileSync(`background_args`, JSON.stringify(background_args));
+    results_folder = fs.readdirSync('results');
+    fs.writeFileSync(`results/content_script_args_${results_folder.length/2 + 1}`, JSON.stringify(content_script_args));
+    fs.writeFileSync(`results/background_args_${results_folder.length/2 + 1}`, JSON.stringify(background_args));
     console.log(content_script_args);
     console.log(background_args);
     await context.close();
