@@ -143,16 +143,18 @@ const { execSync } = require('node:child_process');
                 }
             }
         }
-        if (manifest.permissions.hasOwnProperty("host_permissions")) {
-            for (let i = 0; i < manifest.host_permissions.length; i++) {
-                let extracted_url = manifest.host_permissions[i];
-                update_urls(extracted_urls, extracted_url);
+        if (manifest.hasOwnProperty("permissions")) {
+            if (manifest.permissions.hasOwnProperty("host_permissions")) {
+                for (let i = 0; i < manifest.host_permissions.length; i++) {
+                    let extracted_url = manifest.host_permissions[i];
+                    update_urls(extracted_urls, extracted_url);
+                }
             }
-        }
-        if (manifest.permissions.hasOwnProperty("optional_host_permissions")) {
-            for (let i = 0; i < manifest.optional_host_permissions.length; i++) {
-                let extracted_url = manifest.optional_host_permissions[i];
-                update_urls(extracted_urls, extracted_url);
+            if (manifest.permissions.hasOwnProperty("optional_host_permissions")) {
+                for (let i = 0; i < manifest.optional_host_permissions.length; i++) {
+                    let extracted_url = manifest.optional_host_permissions[i];
+                    update_urls(extracted_urls, extracted_url);
+                }
             }
         }
 
@@ -199,6 +201,14 @@ const { execSync } = require('node:child_process');
         // this tracks console logs from content scripts
         page.on('console', msg => {
             
+            // not to be confused with window.addEventListener! this is the function inside of it
+            if (msg.text().includes("addEventListener function called")){
+                let temp = msg.text().split(" ");
+                let id = temp[3];
+                let time = temp[4];
+                let pc = temp[5];
+                content_script_args.push(["addEventListener function", id, time, pc])
+            }
             if (msg.text().includes("API invoked with args")){
                 //console.log(msg.text());
                 let temp = msg.text().split(" ");
@@ -232,6 +242,7 @@ const { execSync } = require('node:child_process');
                 //     documentaddEventListener[id] += 1;
                 //     content_script_args.push(["document.addEventListener", id, args]);
                 // }
+                
             }
         });
         try{
@@ -287,12 +298,12 @@ const { execSync } = require('node:child_process');
     // console.log("chrome.runtime.onConnect.addListener", chromeruntimeonConnectaddListener)
     // console.log("window.addEventListener", windowaddEventListener)
     // console.log("document.addEventListener", documentaddEventListener)
-    
+
     results_folder = fs.readdirSync('results');
-    fs.writeFileSync(`results/content_script_args_${results_folder.length/2 + 1}`, JSON.stringify(content_script_args));
-    fs.writeFileSync(`results/background_args_${results_folder.length/2 + 1}`, JSON.stringify(background_args));
-    console.log(content_script_args);
-    console.log(background_args);
+    fs.writeFileSync(`results/content_script_args`, JSON.stringify(content_script_args));
+    fs.writeFileSync(`results/background_args`, JSON.stringify(background_args));
+    //console.log(content_script_args);
+    //console.log(background_args);
     await context.close();
     await browser.close();
 
