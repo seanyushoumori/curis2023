@@ -10,7 +10,7 @@ const { execSync } = require('node:child_process');
     //downloads the extension IDs that are called in the arguments list 
     const args = process.argv;
     for (let i = 2; i < args.length; i++){
-        await execSync(`node download_extension.js ${args[i]}`);
+        execSync(`node download_extension.js ${args[i]}`);
     }
     const config = JSON.parse(fs.readFileSync('config.json'));  
     const filepath_to_original_extensions = 'cexts/unzips';
@@ -300,8 +300,8 @@ const { execSync } = require('node:child_process');
     // console.log("document.addEventListener", documentaddEventListener)
 
     results_folder = fs.readdirSync('results');
-    fs.writeFileSync(`results/content_script_args`, JSON.stringify(content_script_args));
-    fs.writeFileSync(`results/background_args`, JSON.stringify(background_args));
+    fs.writeFileSync(`results/content_script_args_${Math.floor(results_folder.length/2)+1}`, JSON.stringify(content_script_args));
+    fs.writeFileSync(`results/background_args_${Math.floor(results_folder.length/2) + 1}`, JSON.stringify(background_args));
     //console.log(content_script_args);
     //console.log(background_args);
     await context.close();
