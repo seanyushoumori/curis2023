@@ -4,6 +4,7 @@ const { chromium, devices } = require('playwright');
 const fs = require("fs");
 const { chrome } = require('node:process');
 const { execSync } = require('node:child_process');
+const { type } = require('node:os');
 
 (async () => {
     
@@ -49,30 +50,52 @@ const { execSync } = require('node:child_process');
         }
     }
 
+    /*
+    A helper function that parses a content script in the format of a string to 
+    search for event Listeners specifically for buttons
+    */
+    function find_buttons(content){
+        //console.log(data);
+
+        // // goes through string, keeps taking substrings until no more instances 
+        // while (content.search(`addEventListener("click"`)!= -1){
+        //     //search for last instance of 
+        // }
+    }
 
     /*
     Goes through the files in the extensions folder, and parses each manifest file
-    to extract URLs that are likely to trigger events
+    to extract URLs that are likely to trigger events, as well buttons that might trigger behavior
     */
     for (let x = 0; x < extension_ids.length; x++) {
         var manifest = JSON.parse(fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8"));
         // copies the proxy content script into each copy of the extensions       
         fs.copyFileSync(filepath_to_proxy_content_script, filepath_to_extension_copies + '/' + extension_ids[x] + '/' + "proxy_content_script.js");
-        var data = fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8");
-        var fd = fs.openSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', 'w+');
         
         if (manifest.hasOwnProperty("content_scripts")) {
             for (let i = 0; i < manifest.content_scripts.length; i++) {
 
-                // look for URLs to extract
+                // look for URLs to extract, as well as buttons on these URLs 
                 if (manifest.content_scripts[i].hasOwnProperty("matches")) {
+                    // parses URLs
                     for (let j = 0; j < manifest.content_scripts[i].matches.length; j++) {
                         let extracted_url = manifest.content_scripts[i].matches[j];
                         update_urls(extracted_urls, extracted_url);
                     }
+                    // parses all content script js files to look for addEventListener functions
+                    if (manifest.content_scripts[i].hasOwnProperty("js")){
+                        for (let j = 0; j < manifest.content_scripts[i].js.length; j++){
+                            var data = fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + manifest.content_scripts[i].js[j], "utf8");
+                            find_buttons(data);
+                        }
+                    }
                 }
+                 
             }
 
+            //below code edits the manifest file
+            var data = fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8");
+            var fd = fs.openSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', 'w+');
             // append to content script part in manifest to add proxy_content_script.js as a content script
             let buffer = `"content_scripts": [{ 
                 "matches": [
@@ -82,12 +105,15 @@ const { execSync } = require('node:child_process');
                 "js": ["proxy_content_script.js"],
                 "run_at": "document_start"
             },`;
+    
             data = data.replace(`"content_scripts": [`, buffer);
             fs.writeSync(fd, data, 0, data.length);
-            
+            fs.close(fd);        
         }
         // if manifest doesn't have content scripts, add a section that contains content_scripts
         else {
+            var data = fs.readFileSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', "utf8");
+            var fd = fs.openSync(filepath_to_extension_copies + '/' + extension_ids[x] + '/' + 'manifest.json', 'w+');
             buffer = `"content_scripts": [{ 
                 "matches": [
                     "http://*/*",
@@ -98,9 +124,11 @@ const { execSync } = require('node:child_process');
             }],`;
             data = "{" + buffer + data.substring(1);
             
+            fs.writeSync(fd, data, 0, data.length);
+            fs.close(fd);
+            
         }
-        fs.writeSync(fd, data, 0, data.length);
-        fs.close(fd);
+        
         if (manifest.hasOwnProperty("background")) {
             
             // The below code adds hooks to the background service workers
@@ -160,6 +188,13 @@ const { execSync } = require('node:child_process');
 
     };
 
+    // goes through all service workers, sees if things like buttons would trigger behavior
+    // check for addEventListener('click'), see which id it's attached to, see which website
+    // its supposed to trigger on
+
+    
+
+    // addEventListener('click')
 
     // creates a single comma seperated string with filepaths to the extensions to test
     var single_string_of_filepaths = "";
@@ -179,11 +214,13 @@ const { execSync } = require('node:child_process');
 
     });
     
-    //all arguments and their callers are stored in these arrays
+    // all arguments and their callers are stored in these arrays,
+    // which are output into a text file for results
     var content_script_args = [];
     var background_args = [];
 
 
+    // at this point, don't allow redirects if we click or submit any info
 
     var website_count = 0;
     for (let url in extracted_urls){
@@ -201,52 +238,24 @@ const { execSync } = require('node:child_process');
         // this tracks console logs from content scripts
         page.on('console', msg => {
             
-            // not to be confused with window.addEventListener! this is the function inside of it
             if (msg.text().includes("addEventListener function called")){
-                let temp = msg.text().split(" ");
-                let id = temp[3];
-                let time = temp[4];
-                let pc = temp[5];
-                content_script_args.push(["addEventListener function", id, time, pc])
+                content_script_args.push(msg.text());
             }
             if (msg.text().includes("API invoked with args")){
-                //console.log(msg.text());
-                let temp = msg.text().split(" ");
-                let api = temp[0];
-                let id = temp[5];
-                let time = temp[6];
-                let pc = temp[7]
-                let args = temp.slice(8, temp.length);
-                content_script_args.push([api, id, time, pc, args]);
-                // if (msg.text().includes("chrome.webRequest.onHeadersReceived.addListener")){
-                //     chromewebRequestonHeadersReceivedaddListener[id] += 1;
-                //     content_script_args.push(["chrome.webRequest.onHeadersReceived.addListener", id, args]);
-                // }
-                // else if (msg.text().includes("chrome.runtime.sendMessage")){
-                //     chromeruntimesendMessage[id] += 1;
-                //     content_script_args.push(["chrome.runtime.sendMessage", id, args]);
-                // }
-                // else if (msg.text().includes("chrome.runtime.onMessage.addListener")){
-                //     chromeruntimeonMessageaddListener[id] += 1;
-                //     content_script_args.push(["chrome.runtime.onMessage.addListener", id, args]);
-                // }
-                // else if (msg.text().includes("chrome.runtime.onConnect.addListener")){
-                //     chromeruntimeonConnectaddListener[id] += 1;
-                //     content_script_args.push(["chrome.runtime.onConnect.addListener", id, args]);
-                // }
-                // else if (msg.text().includes("window.addEventListener")){
-                //     windowaddEventListener[id] += 1;
-                //     content_script_args.push(["window.addEventListener", id, args]);
-                // }
-                // else if (msg.text().includes("document.addEventListener")){
-                //     documentaddEventListener[id] += 1;
-                //     content_script_args.push(["document.addEventListener", id, args]);
-                // }
-                
+                content_script_args.push(msg.text());
+                // look for any listeners for clicks
+                if (msg.text().includes("click")){
+                    
+                }
             }
+            
         });
         try{
             await page.goto(url);
+            // once we visit the website, if it has any password forms, fill them out
+            for (const li of await page.getByRole('button').all()){
+                await li.click();
+            }
         } catch(e){
             console.log(e);
         }
@@ -269,7 +278,6 @@ const { execSync } = require('node:child_process');
     for (let i = 0; i < service_workers.length; i++){
         try {
             let temp = await service_workers[i].evaluate(() => {
-                //return proxied_data;
                 return proxied_data;
                 
             });
@@ -300,8 +308,8 @@ const { execSync } = require('node:child_process');
     // console.log("document.addEventListener", documentaddEventListener)
 
     results_folder = fs.readdirSync('results');
-    fs.writeFileSync(`results/content_script_args_${Math.floor(results_folder.length/2)+1}`, JSON.stringify(content_script_args));
-    fs.writeFileSync(`results/background_args_${Math.floor(results_folder.length/2) + 1}`, JSON.stringify(background_args));
+    fs.writeFileSync(`results/content_script_args_${Math.floor(results_folder.length/2)+1}`, JSON.stringify(content_script_args, null, '\n'));
+    fs.writeFileSync(`results/background_args_${Math.floor(results_folder.length/2) + 1}`, JSON.stringify(background_args, null, '\n'));
     //console.log(content_script_args);
     //console.log(background_args);
     await context.close();
