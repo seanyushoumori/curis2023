@@ -10,7 +10,8 @@ const { execSync } = require('node:child_process');
     var buffer = "var proxied_data = []; var pc = 0;";    
     for (let i = 0; i < config.service_workers_to_proxy.length; i++){
         let temp = 
-        `try {
+        `
+        try {
             ${config.service_workers_to_proxy[i]} = new Proxy(${config.service_workers_to_proxy[i]}, {
                 apply: function(target, thisArg, args) {
                     let args_to_strings = [];
@@ -22,7 +23,7 @@ const { execSync } = require('node:child_process');
                             args_to_strings.push(args[j]);
                         }
                     } 
-                    proxied_data.push(["${config.service_workers_to_proxy[i]}", chrome.runtime.id, Date.now(), pc, target, thisArg, args_to_strings]);
+                    proxied_data.push(["${config.service_workers_to_proxy[i]}", chrome.runtime.id, Date.now(), pc, JSON.stringify(target), JSON.stringify(thisArg), args_to_strings]);
                     pc += 1;
                     return target.apply(thisArg, args);
                 }
@@ -33,56 +34,54 @@ const { execSync } = require('node:child_process');
     }
     fs.writeFileSync("proxy_background.js", buffer);
 
-    buffer = "var pc = 0;";
-    // add window.addEventListener back to content_scripts_to_proxy in config.json!!!! 
+    buffer = `var pc = 0;
+    try {
+        document.createElement = new Proxy(document.createElement, {
+            apply: function(target, thisArg, args) {
+                let elem = target.apply(thisArg, args);
+                elem.addEventListener = new Proxy(elem.addEventListener, {
+                    apply: function(target, thisArg, args) {
+                        function f(event) {
+                            switch(typeof args[1]) {
+                                case "function":
+                                    console.log("addEventListener function called", chrome.runtime.id, Date.now(), pc);
+                                    pc += 1;
+                                    return args[1](event);
+                                case "object":
+                                    if(args[1].handleEvent)
+                                        return args[1].handleEvent(event);;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+    
+                        let args_to_strings = JSON.stringify(args);
+                        console.log("$document.createElement.addEventListener API invoked with args", chrome.runtime.id, Date.now(), pc, JSON.stringify(target.toString()), JSON.stringify(thisArg), args_to_strings);
+                        pc += 1;
+                        //return target.apply(thisArg, args);
+                        return target.apply(thisArg, [args[0], f, args[2] || false]);
+                    }
+                })
 
-    // have window.addEventListener add args to an array, if args contain function,
-    // create a new proxy for func
+                let args_to_strings = JSON.stringify(args);
+                console.log("document.createElement API invoked with args", chrome.runtime.id, Date.now(), pc, JSON.stringify(target.toString()), JSON.stringify(thisArg), args_to_strings);
+                pc += 1;
+                //return target.apply(thisArg, args);
+                return target.apply(thisArg, [args[0], f, args[2] || false]);
+            }
+        })
+    } catch(e) {};
+    `;
+    
 
-
-
-    // buffer += 
-    // `
-    // try {
-    //     window.addEventListener = new Proxy(window.addEventListener, {
-    //         apply: function(target, thisArgs, argsList) {
-    //             function f(event) {
-    //                 switch(typeof argsList[1]) {
-    //                     case "function":
-    //                         console.log("addEventListener function called", chrome.runtime.id, Date.now(), pc);
-    //                         pc += 1;
-    //                         return argsList[1](event);
-    //                     case "object":
-    //                         if(argsList[1].handleEvent)
-    //                             return argsList[1].handleEvent(event);;
-    //                         break;
-    //                     default:
-    //                         break;
-    //                 }
-    //             }
-    //             let args_to_strings = [];
-    //             for (let j = 0; j < argsList.length; j++){
-    //                 if (typeof(argsList[j]) === 'object' && argsList[j] !== null){
-    //                     args_to_strings.push(JSON.stringify(argsList[j]));
-    //                 }
-    //                 else {
-    //                     args_to_strings.push(argsList[j]);
-    //                 }
-    //             }
-    //             pc += 1;
-    //             console.log("window.addEventListener API invoked with args", chrome.runtime.id, Date.now(), pc, thisArg, args_to_strings);
-    //             return target.apply(thisArgs, [argsList[0], f, argsList[2] || false]);
-    //         }
-    //     });
-    // } catch(e) {};
-    // `;
+    
     for (let i = 0; i < config.content_scripts_to_proxy.length; i++){
         let temp = 
-        `try {
+        `
+        try {
             ${config.content_scripts_to_proxy[i]} = new Proxy(${config.content_scripts_to_proxy[i]}, {
                 apply: function(target, thisArg, args) {
-                    let args_to_strings = "";
-                    //new!!!
                     function f(event) {
                         switch(typeof args[1]) {
                             case "function":
@@ -97,12 +96,12 @@ const { execSync } = require('node:child_process');
                                 break;
                         }
                     }
-                    //end new
-                    args_to_strings = JSON.stringify(args);
-                    console.log("${config.content_scripts_to_proxy[i]} API invoked with args", chrome.runtime.id, Date.now(), pc, target, thisArg, args_to_strings);
+
+                    let args_to_strings = JSON.stringify(args);
+                    console.log("${config.content_scripts_to_proxy[i]} API invoked with args", chrome.runtime.id, Date.now(), pc, JSON.stringify(target.toString()), JSON.stringify(thisArg), args_to_strings);
                     pc += 1;
                     //return target.apply(thisArg, args);
-                    return target.apply(thisArgs, [args[0], f, args[2] || false]);
+                    return target.apply(thisArg, [args[0], f, args[2] || false]);
                 }
             })
         } catch(e) {};
