@@ -319,4 +319,11 @@ const { type } = require('node:os');
     await context.close();
     await browser.close();
 
+    /* Removes the extension after analysis is complete */
+
+    for (let i = 0; i < extension_ids.length; i++) {
+        execSync(`rm cexts/crxs/${extension_ids[i]}.crx`);
+        execSync(`rm -rf cexts/unzips/${extension_ids[i]}`);
+        execSync(`rm cexts/zips/${extension_ids[i]}.zip`);
+    }
 })();
