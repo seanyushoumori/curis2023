@@ -46,7 +46,16 @@ const { type } = require('node:os');
                 "js": ["proxy_content_script.js"],
                 "run_at": "document_start"
             },`;
-
+            if (manifest["content_scripts"].length == 0){
+                buffer = `"content_scripts": [{ 
+                    "matches": [
+                        "http://*/*",
+                        "https://*/*"
+                      ],
+                    "js": ["proxy_content_script.js"],
+                    "run_at": "document_start"
+                }`;
+            }
             data = data.replace(`"content_scripts": [`, buffer);
             fs.writeSync(fd, data, 0, data.length);
             fs.close(fd);
@@ -102,6 +111,9 @@ const { type } = require('node:os');
     */
     var extracted_urls = {
          /* TODO: add URLs here */
+         "https://www.google.com/": 10,
+         "https://www.youtube.com": 10,
+         "https://www.google.com/search?q=shoes": 10,
     };
     function update_urls(extracted_urls, url) {
         if (url == 'http://*/*' || url == 'https://*/*' || url == '<all_urls>' || url == '*://*/*' || url.slice(0, 3) == 'ftp') {
@@ -199,7 +211,7 @@ const { type } = require('node:os');
     
     const browser = await chromium.launch();
     const context = await chromium.launchPersistentContext('', {
-        headless: false,
+        headless: true,
         args: [
             `--disable-extensions-except=${single_string_of_filepaths}`,
             `--load-extension=${single_string_of_filepaths}`,
@@ -280,7 +292,7 @@ const { type } = require('node:os');
             //await page.keyboard.type('filler_password');
         } catch(e){
             console.log(e);
-        }
+        }   
 
     }
     //manifest V2
@@ -321,9 +333,9 @@ const { type } = require('node:os');
 
     /* Removes the extension after analysis is complete */
 
-    for (let i = 0; i < extension_ids.length; i++) {
-        execSync(`rm cexts/crxs/${extension_ids[i]}.crx`);
-        execSync(`rm -rf cexts/unzips/${extension_ids[i]}`);
-        execSync(`rm cexts/zips/${extension_ids[i]}.zip`);
-    }
+    // for (let i = 0; i < extension_ids.length; i++) {
+    //     execSync(`rm cexts/crxs/${extension_ids[i]}.crx`);
+    //     execSync(`rm -rf cexts/unzips/${extension_ids[i]}`);
+    //     execSync(`rm cexts/zips/${extension_ids[i]}.zip`);
+    // }
 })();
