@@ -212,7 +212,7 @@ const { type } = require('node:os');
     
     const browser = await chromium.launch();
     const context = await chromium.launchPersistentContext('', {
-        headless: true,
+        headless: false,
         args: [
             `--disable-extensions-except=${single_string_of_filepaths}`,
             `--load-extension=${single_string_of_filepaths}`,
