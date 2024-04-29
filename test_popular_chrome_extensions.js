@@ -46,6 +46,7 @@ const { type } = require('node:os');
                 "js": ["proxy_content_script.js"],
                 "run_at": "document_start"
             },`;
+            // for the edge case when we have "content_scripts: []"
             if (manifest["content_scripts"].length == 0){
                 buffer = `"content_scripts": [{ 
                     "matches": [
@@ -323,9 +324,16 @@ const { type } = require('node:os');
         }
     } 
 
-    results_folder = fs.readdirSync('results');
-    fs.writeFileSync(`results/content_script_args_${Math.floor(results_folder.length/2)+1}`, JSON.stringify(content_script_args, null, '\n'));
-    fs.writeFileSync(`results/background_args_${Math.floor(results_folder.length/2) + 1}`, JSON.stringify(background_args));
+    results_folder = fs.readdirSync("results");
+    try {
+      if (!fs.existsSync(`results/${extension_ids}`)) {
+        fs.mkdirSync(`results/${extension_ids}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    fs.writeFileSync(`results/${extension_ids}/content_script_args`, JSON.stringify(content_script_args, null, '\n'));
+    fs.writeFileSync(`results/${extension_ids}/background_args`, JSON.stringify(background_args));
     //console.log(content_script_args);
     //console.log(background_args);
     await context.close();
