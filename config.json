@@ -2,7 +2,7 @@
     "certificate": "ZWNCSHpvR3JmOVV6UjQ4NlYwcFA2RHNyVHZLOVc3NGtjdTZ5VDFUZzAybz0K",
     "proxy_server": "127.0.0.1:8080",
     "website_count": 10,
-    "extensions_list_location": "/Users/sean/Downloads/Extensions:Research/extensions_list_mini.json",
+    "extensions_list_location": "doubleX_extensions_still_exist.json",
     "extensions_location": "cexts/unzips",
     "service_workers_to_proxy": [
         "chrome.webRequest.onHeadersReceived.addListener",
@@ -12,6 +12,7 @@
         "chrome.webRequest.onBeforeRedirect.addListener",
         "chrome.webRequest.onResponseStarted.addListener",
         "chrome.webRequest.onCompleted.addListener",
+        "chrome.webRequest.onAuthRequired.addListener",
         "chrome.tabs.create",
         "chrome.tabs.executeScript",
         "chrome.tabs.sendMessage",
@@ -20,7 +21,28 @@
         "chrome.tabs.onCreated.addListener",
         "chrome.tabs.onActivated.addListener",
         "chrome.runtime.onMessage.addListener",
-        "chrome.runtime.onConnect.addListener"
+        "chrome.runtime.onConnect.addListener",
+        "eval",
+        "tabs.executeScript",
+        "setInterval",
+        "setTimeout",
+        "XMLHttpRequest().open",
+        "XMLHttpRequest.open",
+        "downloads.download",
+        "fetch",
+        "$.ajax",
+        "jQuery.ajax",
+        "$.get",
+        "jQuery.get",
+        "$.post",
+        "jQuery.post",
+        "$http.get",
+        "$http.post",
+        "cookies.getAll",
+        "bookmarks.getTree",
+        "history.search",
+        "topSites.get"
+
     ],
     "content_scripts_to_proxy": [
         "fetch",
@@ -30,8 +52,21 @@
         "chrome.runtime.onConnect.addListener",
         "document.addEventListener",
         "window.addEventListener",
-        "Element"
-        
+        "Element",
+        "eval",
+        "setInterval",
+        "setTimeout",
+        "XMLHttpRequest().open",
+        "XMLHttpRequest.open",
+        "fetch",
+        "$.ajax",
+        "jQuery.ajax",
+        "$.get",
+        "jQuery.get",
+        "$.post",
+        "jQuery.post",
+        "$http.get",
+        "$http.post"
     ]
 
 }
