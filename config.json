@@ -2,7 +2,7 @@
     "certificate": "ZWNCSHpvR3JmOVV6UjQ4NlYwcFA2RHNyVHZLOVc3NGtjdTZ5VDFUZzAybz0K",
     "proxy_server": "127.0.0.1:8080",
     "website_count": 10,
-    "extensions_list_location": "doubleX_extensions_still_exist.json",
+    "extensions_list_location": "extensions_list_mini.json",
     "extensions_location": "cexts/unzips",
     "service_workers_to_proxy": [
         "chrome.webRequest.onHeadersReceived.addListener",
@@ -50,8 +50,7 @@
         "chrome.runtime.sendMessage",
         "chrome.runtime.onMessage.addListener",
         "chrome.runtime.onConnect.addListener",
-        "document.addEventListener",
-        "window.addEventListener",
+        "EventTarget.prototype.addEventListener",
         "Element",
         "eval",
         "setInterval",

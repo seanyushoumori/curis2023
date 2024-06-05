@@ -6,6 +6,10 @@ const { chrome } = require('node:process');
 const { execSync } = require('node:child_process');
 const { type } = require('node:os');
 
+
+
+// MAKE PROXIES FOR CONTENT SCRIPTS
+// MAKE PROXIES WORK FOR ADDEVENTLISTENERS
 (async () => {
     
     //downloads the extension IDs that are called in the arguments list 
@@ -317,6 +321,10 @@ const { type } = require('node:os');
                 
             });
             for (let j = 0; j < temp.length; j++){
+                // this is an edge case to handle how playwright gathers data
+                if ("return proxied_data" in temp[j]){
+                    continue
+                } 
                 background_args.push(temp[j].slice());
             }
         } catch (e) {
@@ -332,7 +340,7 @@ const { type } = require('node:os');
     } catch (err) {
       console.error(err);
     }
-    fs.writeFileSync(`results/${extension_ids}/content_script_args`, JSON.stringify(content_script_args, null, '\n'));
+    fs.writeFileSync(`results/${extension_ids}/content_script_args`, JSON.stringify(content_script_args, null));
     fs.writeFileSync(`results/${extension_ids}/background_args`, JSON.stringify(background_args));
     //console.log(content_script_args);
     //console.log(background_args);
